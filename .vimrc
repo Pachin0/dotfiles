@@ -1,3 +1,13 @@
+" Gui Stuff
+
+
+set guioptions-=m  "remove menu bar
+set guioptions-=T  "remove toolbar
+set guioptions-=r  "remove right-hand scroll bar
+set guioptions-=L  "remove left-hand scroll bar
+
+
+set guifont=JetBrainsMono\ 13
 set encoding=utf-8
 
 call plug#begin()
@@ -14,6 +24,7 @@ Plug 'jackguo380/vim-lsp-cxx-highlight'
 Plug 'vim-airline/vim-airline'
 Plug 'mhinz/vim-startify'
 Plug 'Yggdroot/indentLine'
+Plug 'rust-lang/rust.vim'
 
 "Colorschemes
 Plug 'pgavlin/pulumi.vim'
@@ -21,6 +32,7 @@ Plug 'jcherven/jummidark.vim'
 Plug 'Mizux/vim-colorschemes'
 Plug 'liuchengxu/space-vim-dark'
 Plug 'altercation/vim-colors-solarized'
+Plug 'junk-e/identity.vim'
 call plug#end()
 
 
@@ -34,8 +46,9 @@ set nocompatible
 let &t_ut=''
 set termguicolors
 
-set background=dark
-colorscheme cobalt
+packadd! dracula_pro
+let g:dracula_colorterm = 0
+colorscheme dracula_pro
 
 set mouse=a
 syntax on
@@ -65,8 +78,10 @@ let g:ctrlp_working_path_mode = 0
 
 
 ""Compile Scripts
-map Q <Nop>
 map <F1> :!clang++ % && ./a.out
+map <F2> :make && ./a.out
+map <F3> :!ghc -dynamic % ./a.out
+map <F4> :!cargo run
 
 
 
@@ -271,4 +286,3 @@ function ToggleWrap()
     noremap <silent> $ g$
   endif
 endfunction
-
