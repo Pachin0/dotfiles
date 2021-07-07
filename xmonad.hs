@@ -7,24 +7,25 @@
 -- Normally, you'd only override those defaults you care about.
 --
 
-import XMonad
+import XMonad 
 import Data.Monoid
 import System.Exit
 
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
 
--- my stuff
+-- Layouts
 import XMonad.Layout.Spacing
-import Graphics.X11.ExtraTypes.XF86
-import XMonad.Hooks.ManageDocks
 import XMonad.Layout.Tabbed
 import XMonad.Layout.TwoPane
 import XMonad.Layout.Fullscreen
 import XMonad.Layout.ToggleLayouts
+import XMonad.Layout.Grid
+import XMonad.Layout.SimpleDecoration
+import XMonad.Layout.NoFrillsDecoration
 
-import XMonad.Prompt.ConfirmPrompt
-
+import Graphics.X11.ExtraTypes.XF86
+import XMonad.Hooks.ManageDocks
 import XMonad.Actions.GridSelect
 import XMonad.Actions.NoBorders
 import XMonad.Util.SpawnNamedPipe
@@ -37,6 +38,14 @@ import XMonad.Hooks.EwmhDesktops
 import XMonad.Actions.UpdatePointer
 import XMonad.Layout.CenteredMaster
 import XMonad.Layout.Tabbed
+
+-- Utils
+import XMonad.Util.NamedScratchpad
+
+
+
+
+
 -- my stuff end
 
 
@@ -46,7 +55,8 @@ import XMonad.Layout.Tabbed
 -- The preferred terminal program, which is used in a binding below and by
 -- certain contrib modules.
 --
-myTerminal      = "kitty"
+--myTerminal      = "kitty"
+myTerminal      = "st"
 
 -- Whether focus follows the mouse pointer.
 myFocusFollowsMouse :: Bool
@@ -58,13 +68,13 @@ myClickJustFocuses = False
 
 -- Width of the window border in pixels.
 myBorderWidth   = 1
-
 -- modMask lets you specify which modkey you want to use. The default
 -- is mod1Mask ("left alt").  You may also consider using mod3Mask
 -- ("right alt"), which does not conflict with emacs keybindings. The
 -- "windows key" is usually mod4Mask.
 --
 myModMask       = mod1Mask
+--myModMask = mod4Mask
 
 -- The default number of workspaces (virtual screens) and their names.
 -- By default we use numeric strings, but any string may be used as a
@@ -80,7 +90,8 @@ myWorkspaces    = ["1","2","3","4","5","6","7","8","9"]
 -- Border colors for unfocused and focused windows, respectively.
 --
 myNormalBorderColor  = "#5f676a"
-myFocusedBorderColor = "#44bcd8"
+--myFocusedBorderColor = "#44bcd8"
+myFocusedBorderColor = "green"
 
 ------------------------------------------------------------------------
 -- Key bindings. Add, modify or remove key bindings here.
@@ -150,7 +161,7 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((modm .|. shiftMask, xK_space), sendMessage ToggleStruts)
 
     -- Quit xmonad
-    , (modm .|. shiftMask, xK_q     ), confirmPrompt def "exit" $ io (exitWith ExitSuccess))
+    --, (modm .|. shiftMask, xK_q     ), confirmPrompt def "exit" $ io (exitWith ExitSuccess))
 
     -- Restart xmonad
     , ((modm              , xK_q     ), spawn "xmonad --recompile; xmonad --restart")
@@ -183,10 +194,11 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((modm .|. shiftMask, xK_s), spawn ("flameshot gui"))
 
     -- Toggle Border not yet
-    , ((modm,  xK_b                ), withFocused toggleBorder)
+    --, ((modm,  xK_b                ), namedScratchpadAction scratchpads "Music")
 
     -- Toggle FULL layout 
-    , ((modm,   xK_f               ), sendMessage ToggleLayout)
+    , ((modm,   xK_f               ), sendMessage $ Toggle "Full")
+    --, ((modm,   xK_p               ), setLayout $ Xmonad.layoutHook conf)
 
 
     -- experimental polybar toggle 
@@ -251,22 +263,38 @@ i = 3
 
 gaps i = spacingRaw True (Border i i i i) True (Border i i i i) True 
 
-myLayout = smartBorders $ toggleLayouts full (tiled ||| twopanes)
+myLayout    = smartBorders 
+            $ toggleLayouts full 
+            (   tiled 
+            ||| twopanes 
+            ||| grid
+            ) 
+    where
+        full        =   avoidStruts 
+                        $ noBorders Full 
+        tiled       =   lessBorders Screen
+                        $ avoidStruts
+                        $ let i=3 in gaps i 
+                        $ Tall {
+                        tallNMaster = 1
+                    ,   tallRatioIncrement = 3/100
+                    ,   tallRatio = 1/2
+                    }
+        twopanes    =   avoidStruts
+                        $ let i=3 in gaps i
+                        $ TwoPane (3/100) (1/2)
+        grid        =   avoidStruts
+                        $ let i=3 in gaps i
+                        $ Grid
 
-full =        noBorders 
-            $ Full 
 
-tiled =       let i=3 in gaps i 
-            $ avoidStruts
-            $ Tall {
-              tallNMaster = 1
-            , tallRatioIncrement = 3/100
-            , tallRatio = 1/2
-            }
-            
-twopanes =  let i=3 in gaps i 
-            $ avoidStruts
-            $ TwoPane (3/100) (1/2)
+myTheme = defaultTheme
+    { fontName = "xft:JetBrainsMono:pixelsize=10"
+    }
+-----
+--scratchpads = [
+    --NS "Music" "mpdevil" (className =? "mpdevil") nonFloating]
+
 ------------------------------------------------------------------------
 -- Window rules:
 
@@ -293,6 +321,7 @@ myManageHook = composeAll
     , resource  =? "desktop_window" --> doIgnore
     , resource  =? "kdesktop"       --> doIgnore ]
 
+
 ------------------------------------------------------------------------
 -- Event handling
 
@@ -311,14 +340,23 @@ myEventHook = mempty
 -- See the 'XMonad.Hooks.DynamicLog' extension for examples.
 
 
+--myxmobarPP = def {     
+           --ppCurrent = xmobarColor "#44bcd8" "" . wrap "[" "]"
+         --, ppLayout  = xmobarColor "purple"  "" . wrap "[" "]"
+         ----, ppTitle   = xmobarColor "green"  ""  . shorten 40
+         --, ppTitle = xmobarColor "green" "" . shorten 40 . wrap "[" "]"
+         --, ppVisible = xmobarColor "yellow" ""  . wrap "(" ")"
+         --, ppUrgent  = xmobarColor "red" "yellow"
+         --, ppSep     = " | "
+         --}
 myxmobarPP = def {     
            ppCurrent = xmobarColor "#44bcd8" "" . wrap "[" "]"
-         , ppLayout  = xmobarColor "purple"  "" . wrap "[" "]"
+         , ppLayout  = xmobarColor "purple"  "" . wrap "" ""
          --, ppTitle   = xmobarColor "green"  ""  . shorten 40
-         , ppTitle = xmobarColor "green" "" . shorten 40 . wrap "[" "]"
+         , ppTitle = xmobarColor "green" "" . shorten 40 . wrap "" ""
          , ppVisible = xmobarColor "yellow" ""  . wrap "(" ")"
          , ppUrgent  = xmobarColor "red" "yellow"
-         , ppSep     = " | "
+         , ppSep     = "   "
          }
 
 
